@@ -3,7 +3,10 @@ import styled from 'styled-components';
 
 const FooterWrapper = styled.footer`
   border: 3px solid grey;
-  padding: 5px;
+  text-align: center;
+  width: 100%;
+  height: 5vh;
+  font-size: 1.3em
 `;
 
 const Footer = () => {

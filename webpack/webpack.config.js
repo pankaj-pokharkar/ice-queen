@@ -17,6 +17,22 @@ module.exports = {
           },
         ],
       },
+      {
+        test: /\.css$/,
+        use: ['babel-loader', 'css-loader'],
+      },
+      {
+        test: /\.(?:ico|gif|png|jpg|jpeg)$/i,
+        type: 'asset/resource',
+      },
+      {
+        test: /\.json5$/i,
+        loader: 'json5-loader',
+        options: {
+          esModule: true,
+        },
+        type: 'javascript/auto',
+      },
     ],
   },
   output: {
