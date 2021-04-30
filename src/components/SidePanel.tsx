@@ -2,6 +2,7 @@ import { faCommentSlash } from '@fortawesome/free-solid-svg-icons';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import Image from './dummyFlavour.png';
+import { flavoursData } from "../data";
 
 const Card = styled.div`
   height: 100px;
@@ -11,17 +12,17 @@ const Card = styled.div`
 `
 
 const RightPanel = styled.div`
-width: 25%;
-height: 80vh;
-position: fixed;
-z-index: 1;
-right: 0;
-background: darkgrey;
-transition: 0.5s;
-display: flex;
-flex-direction: column;
-justify-content: start;
-align-items: center;
+  width: 25%;
+  height: 80vh;
+  position: fixed;
+  z-index: 1;
+  right: 0;
+  background: darkgrey;
+  transition: 0.5s;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
 `
 
 interface Props {
@@ -62,17 +63,15 @@ interface SizeQtyMap {
   large?: number
 }
 
-const OrderRow = ({ size, availQty, rate, orderData, setOrderData }: any) => {
+const OrderRow = ({ size, availQty, rate, inputValue, onInputChange }: any) => {
   const [orderQty, setOrderQty] = useState<number>(0);
 
   return (
     <div className="size-quantity-row" style={{ height: '5vw'}}>
       <p style={{ margin: 0}}>{size.toUpperCase()}: ${rate}</p>
-      <p style={{ margin: 0}}>Max Qty: {availQty}</p>
+      <p style={{ margin: 0}}>Available Qty: {availQty}</p>
       <label htmlFor={`${size}-qty`}>Enter Quantity:
-        <InputNum id={`${size}-qty`} type="number" min="0" max={availQty} value={orderQty} onChange={
-          (e)=> setOrderQty(+e.target.value)} />
-          {/* // (e)=> setOrderData({...orderData, [size]: +e.target.value})} /> */}
+        <InputNum id={`${size}-qty`} name={size} type="number" min="0" max={availQty} value={inputValue} onChange={onInputChange} />
       </label>
       
     </div>
@@ -89,19 +88,46 @@ export const SidePanel = ({item, onSubmitHandler, closePanel}: any) => {
   });
   const [totalAmt, setTotalAmt] = useState<number>(0);
 
+  const placeOrder = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    let formData = {...item};
+    formData.stock.forEach((item, index) => {
+      if(orderData[item.size] && orderData[item.size] <= item.availQuantity) {
+        formData.stock[index].availQuantity -= orderData[item.size];
+      }
+    })
+    // TO-DO add successful flash message
+    closePanel();
+  }
+
+  const setOrderQty = (e:  React.ChangeEvent<HTMLInputElement>) => {
+    setOrderData({...orderData, [e.target.name]: +e.target.value});
+  }
+
   useEffect(() => {
-    console.log('Side panel rendered');
+    // Once new item is selected, input field values are resetted. TO-DO: Add discard changes popup
     setOrderData({
       "small": 0,
       "medium": 0,
       "large": 0
     })
 
-  }, [])
+  }, [item])
 
-
-  console.log('Order Data', orderData);
-
+  useEffect(() => {
+    // calculate total amount, enable/disable buy button
+    let total = 0;
+    item.stock.forEach((item: any) => {
+      if(orderData[item.size] <= item.availQuantity) {
+        total += orderData[item.size]*item.rate;
+        setError(false);
+      } else {
+        setError(true);
+      }
+    })
+    setTotalAmt(total);
+    setBuyDisabled(total === 0);
+  }, [item, orderData, setTotalAmt, setBuyDisabled, setError])
   
 
   return (
@@ -111,7 +137,7 @@ export const SidePanel = ({item, onSubmitHandler, closePanel}: any) => {
         <p style={{ margin: 'auto 0'}}>{item.name}</p>
       </Card>
       <p style={{ padding: '0.8em', marginTop: '30px'}}>{item.desc}</p>
-      <form className="order-form" onSubmit={onSubmitHandler} style={{ marginTop: '-20px', scrollBehavior: 'auto'}}>
+      <form className="order-form" onSubmit={placeOrder} style={{ marginTop: '-20px', scrollBehavior: 'auto'}}>
         {item.stock.map((stockItem: any, index: number) => 
           {
             if(stockItem.availQuantity > 0) {
@@ -120,14 +146,14 @@ export const SidePanel = ({item, onSubmitHandler, closePanel}: any) => {
                       availQty={stockItem.availQuantity}
                       rate={stockItem.rate}
                       key={index}
-                      orderData={orderData}
-                      setOrderData={setOrderData}
+                      inputValue={orderData[stockItem.size]}
+                      onInputChange={setOrderQty}
                     />
             }
           }
         )}
         {isError && (
-          <p style={{ color: 'red' }}></p>
+          <p style={{ color: 'maroon', border: '2px solid maroon' }}>Selected quanity should be less than Available quantity.</p>
         )}
         <p style={{fontWeight: 'bold'}}>Total Amount: ${totalAmt}</p>
         <div className="action-row" style={{ position: 'absolute', bottom: '15px'}}>
